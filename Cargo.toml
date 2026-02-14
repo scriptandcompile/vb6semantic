@@ -1,5 +1,5 @@
 [package]
-name = "vb6-semantic-analysis"
+name = "vb6semantic"
 version = "0.1.0"
 authors.workspace = true
 edition.workspace = true

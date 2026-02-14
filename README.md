@@ -1,10 +1,10 @@
-# vb6-semantic-analysis
+# vb6semantic
 
 Semantic analysis and symbol table construction for Visual Basic 6 code.
 
 ## Overview
 
-`vb6-semantic-analysis` provides semantic analysis capabilities for VB6 code parsed by [vb6parse](../vb6parse). It builds symbol tables, performs type checking, resolves names, and validates semantic correctness of VB6 code.
+`vb6semantic` provides semantic analysis capabilities for VB6 code parsed by [vb6parse](../vb6parse). It builds symbol tables, performs type checking, resolves names, and validates semantic correctness of VB6 code.
 
 ## Features
 
@@ -20,7 +20,7 @@ Semantic analysis and symbol table construction for Visual Basic 6 code.
 ### Basic Analysis
 
 ```rust
-use vb6_semantic_analysis::{SemanticAnalyzer, AnalysisResult};
+use vb6semantic::{SemanticAnalyzer, AnalysisResult};
 use vb6parse::parsers::parse_project;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Symbol Lookup
 
 ```rust
-use vb6_semantic_analysis::{SemanticAnalyzer, SymbolKind};
+use vb6semantic::{SemanticAnalyzer, SymbolKind};
 
 let mut analyzer = SemanticAnalyzer::new();
 // ... analyze code ...
@@ -71,7 +71,7 @@ let scope_manager = analyzer.scope_manager();
 ### Type Checking
 
 ```rust
-use vb6_semantic_analysis::{TypeChecker, TypeInfo, SourceLocation};
+use vb6semantic::{TypeChecker, TypeInfo, SourceLocation};
 use std::path::PathBuf;
 
 let checker = TypeChecker::new();
@@ -95,7 +95,7 @@ match checker.check_assignment(&string_type, &int_type, &location) {
 ### Custom Symbol Creation
 
 ```rust
-use vb6_semantic_analysis::{Symbol, SymbolKind, Visibility, TypeInfo, SourceLocation};
+use vb6semantic::{Symbol, SymbolKind, Visibility, TypeInfo, SourceLocation};
 use std::path::PathBuf;
 use std::collections::HashMap;
 
@@ -275,13 +275,13 @@ See [docs/EXAMPLES.md](docs/EXAMPLES.md) for detailed examples.
 
 ```bash
 # Run tests
-cargo test -p vb6-semantic-analysis
+cargo test -p vb6semantic
 
 # Run with output
-cargo test -p vb6-semantic-analysis -- --nocapture
+cargo test -p vb6semantic -- --nocapture
 
 # Test specific module
-cargo test -p vb6-semantic-analysis --lib symbols
+cargo test -p vb6semantic --lib symbols
 ```
 
 ## Documentation
@@ -309,5 +309,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Related Projects
 
 - [vb6parse](../vb6parse) - VB6 parser library
-- [vb6-convert](../vb6-convert) - VB6 conversion framework
+- [vb6convert](../vb6convert) - VB6 conversion framework
 - [aspen](../aspen) - VB6 project tools

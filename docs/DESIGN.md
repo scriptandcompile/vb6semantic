@@ -1,8 +1,8 @@
-# Design Documentation for vb6-semantic-analysis
+# Design Documentation for vb6semantic
 
 ## Overview
 
-The vb6-semantic-analysis library provides semantic analysis capabilities for VB6 code. It operates on the parsed output from vb6parse and builds symbol tables, performs type checking, and validates semantic correctness.
+The vb6semantic library provides semantic analysis capabilities for VB6 code. It operates on the parsed output from vb6parse and builds symbol tables, performs type checking, and validates semantic correctness.
 
 ## Goals
 
@@ -351,7 +351,7 @@ Input: Parsed structures from vb6parse
 
 Walk the parsed AST and build symbols.
 
-### With vb6-convert
+### With vb6convert
 
 Provide symbol information for conversion:
 - Symbol lookup during conversion
