@@ -82,18 +82,13 @@ pub enum SymbolKind {
     Label,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Default, Deserialize)]
 pub enum Visibility {
+    #[default]
     Public,
     Private,
     Friend,
     Global,
-}
-
-impl Default for Visibility {
-    fn default() -> Self {
-        Visibility::Public
-    }
 }
 
 /// Symbol table for managing symbols in scopes
@@ -124,10 +119,11 @@ impl SymbolTable {
 
     /// Add a symbol to a scope
     pub fn add_symbol(&mut self, scope_id: usize, symbol: Symbol) -> Result<()> {
-        let scope = self.symbols.get_mut(&scope_id)
-            .ok_or_else(|| crate::error::SemanticError::InvalidScope {
+        let scope = self.symbols.get_mut(&scope_id).ok_or_else(|| {
+            crate::error::SemanticError::InvalidScope {
                 message: format!("Scope {} does not exist", scope_id),
-            })?;
+            }
+        })?;
 
         if let Some(existing) = scope.get(&symbol.name) {
             return Err(crate::error::SemanticError::DuplicateSymbol {
@@ -162,9 +158,7 @@ impl SymbolTable {
 
     /// Check if a symbol exists in any scope
     pub fn symbol_exists(&self, name: &str) -> bool {
-        self.symbols
-            .values()
-            .any(|scope| scope.contains_key(name))
+        self.symbols.values().any(|scope| scope.contains_key(name))
     }
 }
 

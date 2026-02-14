@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::error::{Result, SourceLocation};
 use serde::{Deserialize, Serialize};
 
@@ -59,6 +61,39 @@ pub struct ArrayBound {
     pub upper: Option<i32>,
 }
 
+impl Display for TypeInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let base = match &self.kind {
+            TypeKind::Integer => "Integer",
+            TypeKind::Long => "Long",
+            TypeKind::Single => "Single",
+            TypeKind::Double => "Double",
+            TypeKind::Currency => "Currency",
+            TypeKind::String => "String",
+            TypeKind::Boolean => "Boolean",
+            TypeKind::Byte => "Byte",
+            TypeKind::Date => "Date",
+            TypeKind::Variant => "Variant",
+            TypeKind::Object => "Object",
+            TypeKind::Class(name) => return write!(f, "{}", name),
+            TypeKind::UserType(name) => return write!(f, "{}", name),
+            TypeKind::Enum(name) => return write!(f, "{}", name),
+            TypeKind::Nothing => "Nothing",
+            TypeKind::Empty => "Empty",
+            TypeKind::Null => "Null",
+            TypeKind::Sub => "Sub",
+            TypeKind::Function { return_type } => return write!(f, "Function -> {}", return_type),
+            TypeKind::Unknown => "Unknown",
+        };
+
+        if self.is_array {
+            write!(f, "{}()", base)
+        } else {
+            write!(f, "{}", base)
+        }
+    }
+}
+
 impl TypeInfo {
     pub fn new(kind: TypeKind) -> Self {
         Self {
@@ -111,17 +146,15 @@ impl TypeInfo {
         }
 
         // Numeric types have some compatibility
-        match (&self.kind, &other.kind) {
-            (TypeKind::Integer, TypeKind::Long) |
-            (TypeKind::Long, TypeKind::Integer) |
-            (TypeKind::Single, TypeKind::Double) |
-            (TypeKind::Double, TypeKind::Single) => true,
-
-            (TypeKind::Object, TypeKind::Class(_)) |
-            (TypeKind::Class(_), TypeKind::Object) => true,
-
-            _ => false,
-        }
+        matches!(
+            (&self.kind, &other.kind),
+            (TypeKind::Integer, TypeKind::Long)
+                | (TypeKind::Long, TypeKind::Integer)
+                | (TypeKind::Single, TypeKind::Double)
+                | (TypeKind::Double, TypeKind::Single)
+                | (TypeKind::Object, TypeKind::Class(_))
+                | (TypeKind::Class(_), TypeKind::Object)
+        )
     }
 
     /// Check if this type can be assigned to another type
@@ -137,46 +170,13 @@ impl TypeInfo {
         }
 
         // Smaller numeric types can be assigned to larger
-        match (&self.kind, &other.kind) {
-            (TypeKind::Integer, TypeKind::Long) |
-            (TypeKind::Integer, TypeKind::Double) |
-            (TypeKind::Long, TypeKind::Double) |
-            (TypeKind::Single, TypeKind::Double) => true,
-
-            _ => false,
-        }
-    }
-
-    /// Get a string representation of this type
-    pub fn to_string(&self) -> String {
-        let base = match &self.kind {
-            TypeKind::Integer => "Integer",
-            TypeKind::Long => "Long",
-            TypeKind::Single => "Single",
-            TypeKind::Double => "Double",
-            TypeKind::Currency => "Currency",
-            TypeKind::String => "String",
-            TypeKind::Boolean => "Boolean",
-            TypeKind::Byte => "Byte",
-            TypeKind::Date => "Date",
-            TypeKind::Variant => "Variant",
-            TypeKind::Object => "Object",
-            TypeKind::Class(name) => return name.clone(),
-            TypeKind::UserType(name) => return name.clone(),
-            TypeKind::Enum(name) => return name.clone(),
-            TypeKind::Nothing => "Nothing",
-            TypeKind::Empty => "Empty",
-            TypeKind::Null => "Null",
-            TypeKind::Sub => "Sub",
-            TypeKind::Function { return_type } => return format!("Function -> {}", return_type.to_string()),
-            TypeKind::Unknown => "Unknown",
-        };
-
-        if self.is_array {
-            format!("{}()", base)
-        } else {
-            base.to_string()
-        }
+        matches!(
+            (&self.kind, &other.kind),
+            (TypeKind::Integer, TypeKind::Long)
+                | (TypeKind::Integer, TypeKind::Double)
+                | (TypeKind::Long, TypeKind::Double)
+                | (TypeKind::Single, TypeKind::Double)
+        )
     }
 }
 
@@ -217,7 +217,9 @@ impl TypeChecker {
         _location: &SourceLocation,
     ) -> Result<TypeInfo> {
         // Variant propagates
-        if matches!(left_type.kind, TypeKind::Variant) || matches!(right_type.kind, TypeKind::Variant) {
+        if matches!(left_type.kind, TypeKind::Variant)
+            || matches!(right_type.kind, TypeKind::Variant)
+        {
             return Ok(TypeInfo::variant());
         }
 
@@ -227,7 +229,8 @@ impl TypeChecker {
         }
 
         // String concatenation
-        if matches!(left_type.kind, TypeKind::String) || matches!(right_type.kind, TypeKind::String) {
+        if matches!(left_type.kind, TypeKind::String) || matches!(right_type.kind, TypeKind::String)
+        {
             return Ok(TypeInfo::string());
         }
 
@@ -236,20 +239,21 @@ impl TypeChecker {
     }
 
     fn is_numeric(&self, kind: &TypeKind) -> bool {
-        matches!(kind, 
-            TypeKind::Integer | 
-            TypeKind::Long | 
-            TypeKind::Single | 
-            TypeKind::Double | 
-            TypeKind::Currency |
-            TypeKind::Byte
+        matches!(
+            kind,
+            TypeKind::Integer
+                | TypeKind::Long
+                | TypeKind::Single
+                | TypeKind::Double
+                | TypeKind::Currency
+                | TypeKind::Byte
         )
     }
 
     fn promote_numeric_types(&self, left: &TypeInfo, right: &TypeInfo) -> TypeInfo {
         // Promotion rules: Byte < Integer < Long < Single < Double < Currency
         use TypeKind::*;
-        
+
         let promoted = match (&left.kind, &right.kind) {
             (Double, _) | (_, Double) => Double,
             (Currency, _) | (_, Currency) => Currency,
