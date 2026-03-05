@@ -6,6 +6,12 @@ Semantic analysis and symbol table construction for Visual Basic 6 code.
 
 `vb6semantic` provides semantic analysis capabilities for VB6 code parsed by [vb6parse](../vb6parse). It builds symbol tables, performs type checking, resolves names, and validates semantic correctness of VB6 code.
 
+The output of semantic analysis is used by:
+- [aspen](../aspen) - for calling out to compile, check, document, and test vb6 code.
+- [vb6compile](../vb6compile) - Before lowering to IR and compilation
+- [vb6convert](../vb6convert) - For conversion analysis and validation
+- [vb6interpret](../vb6interpret) - for runtime scope and validation.
+
 ## Features
 
 - **Symbol Tables**: Build comprehensive symbol tables for VB6 projects
@@ -14,105 +20,6 @@ Semantic analysis and symbol table construction for Visual Basic 6 code.
 - **Type Checking**: Validate type compatibility and assignments
 - **Visibility Rules**: Enforce Public/Private/Friend visibility rules
 - **Error Reporting**: Detailed semantic error messages with source locations
-
-## Usage
-
-### Basic Analysis
-
-```rust
-use vb6semantic::{SemanticAnalyzer, AnalysisResult};
-use vb6parse::parsers::parse_project;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Parse VB6 project
-    let project = parse_project("path/to/project.vbp")?;
-    
-    // Create semantic analyzer
-    let mut analyzer = SemanticAnalyzer::new();
-    
-    // Analyze the project
-    let result = analyzer.analyze_project(&project)?;
-    
-    // Check for errors
-    if result.is_successful() {
-        println!("Analysis successful!");
-        println!("Warnings: {}", result.warning_count());
-    } else {
-        println!("Analysis failed with {} errors", result.error_count());
-        for error in result.errors {
-            eprintln!("Error: {}", error);
-        }
-    }
-    
-    Ok(())
-}
-```
-
-### Symbol Lookup
-
-```rust
-use vb6semantic::{SemanticAnalyzer, SymbolKind};
-
-let mut analyzer = SemanticAnalyzer::new();
-// ... analyze code ...
-
-// Look up a symbol
-if let Some(symbol) = analyzer.lookup_symbol("MyFunction") {
-    println!("Found: {} (kind: {:?})", symbol.name, symbol.kind);
-    println!("Type: {}", symbol.type_info.to_string());
-    println!("Visibility: {:?}", symbol.visibility);
-}
-
-// Get all functions
-let scope_manager = analyzer.scope_manager();
-// ... query scope manager ...
-```
-
-### Type Checking
-
-```rust
-use vb6semantic::{TypeChecker, TypeInfo, SourceLocation};
-use std::path::PathBuf;
-
-let checker = TypeChecker::new();
-
-let int_type = TypeInfo::integer();
-let string_type = TypeInfo::string();
-
-let location = SourceLocation {
-    file: PathBuf::from("test.bas"),
-    line: 10,
-    column: 5,
-};
-
-// Check if assignment is valid
-match checker.check_assignment(&string_type, &int_type, &location) {
-    Ok(()) => println!("Assignment valid"),
-    Err(e) => eprintln!("Type mismatch: {}", e),
-}
-```
-
-### Custom Symbol Creation
-
-```rust
-use vb6semantic::{Symbol, SymbolKind, Visibility, TypeInfo, SourceLocation};
-use std::path::PathBuf;
-use std::collections::HashMap;
-
-let symbol = Symbol {
-    name: "MyVariable".to_string(),
-    kind: SymbolKind::Variable,
-    type_info: TypeInfo::integer(),
-    visibility: Visibility::Public,
-    location: SourceLocation {
-        file: PathBuf::from("module.bas"),
-        line: 5,
-        column: 10,
-    },
-    scope_id: 0,
-    attributes: HashMap::new(),
-};
-```
 
 ## Architecture
 
@@ -203,22 +110,9 @@ Supported VB6 types:
 
 ## Integration with vb6parse
 
-This library works on the output of vb6parse:
-
-```rust
-// VB6 code is parsed into structures
-let project = vb6parse::parsers::parse_project("project.vbp")?;
-let module = vb6parse::parsers::parse_module("module.bas")?;
-let class = vb6parse::parsers::parse_class("class.cls")?;
-let form = vb6parse::parsers::parse_form("form.frm")?;
-
-// Then analyzed for semantics
-let mut analyzer = SemanticAnalyzer::new();
-analyzer.analyze_project(&project)?;
-analyzer.analyze_module(&module)?;
-analyzer.analyze_class(&class)?;
-analyzer.analyze_form(&form)?;
-```
+vb6parse is responsible for loading sourcefiles, parsing these sourcefiles into the 
+corresponding file types (ProjectFile, ModuleFile, ClassFile, FormFile, etc) and then
+vb6semantic is responsible for doing semantic analysis on these files.
 
 ## Use Cases
 
@@ -288,9 +182,6 @@ cargo test -p vb6semantic --lib symbols
 
 - [DESIGN.md](docs/DESIGN.md) - Detailed design documentation
 - [SYMBOL_TABLES.md](docs/SYMBOL_TABLES.md) - Symbol table design
-- [TYPE_SYSTEM.md](docs/TYPE_SYSTEM.md) - Type system documentation
-- [SCOPING.md](docs/SCOPING.md) - Scoping rules
-- [API.md](docs/API.md) - API reference
 
 ## Contributing
 
@@ -309,5 +200,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Related Projects
 
 - [vb6parse](../vb6parse) - VB6 parser library
-- [vb6convert](../vb6convert) - VB6 conversion framework
 - [aspen](../aspen) - VB6 project tools

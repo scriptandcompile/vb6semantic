@@ -1,5 +1,42 @@
-use crate::symbols::{Symbol, Visibility};
+//! This module defines the Scope and ScopeManager structures for managing
+//! lexical scopes and symbol resolution in VB6 code.
+//!
+//! The Scope struct represents a single scope, which can be of various kinds (global, class, procedure, etc.)
+//! and contains symbols defined within that scope. The ScopeManager struct manages the hierarchy of scopes,
+//! allowing for lookups and scope transitions during analysis. It provides methods to push and pop scopes,
+//! add symbols, and perform lookups with proper handling of scope hierarchy and symbol visibility.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use vb6semantic::{ ScopeManager, ScopeKind, Symbol, Visibility, SourceLocation, TypeInfo, SymbolKind };
+//!
+//! use std::collections::HashMap;
+//!
+//! pub fn main() {
+//!     let mut manager = ScopeManager::new();
+//!     let global_scope_id = manager.global_scope_id();
+//!     let class_scope_id = manager.push_scope(ScopeKind::Class, "MyClass".to_string());
+//!     let myVar_symbol = Symbol {
+//!         name: "myVar".to_string(),
+//!         kind: SymbolKind::Variable,
+//!         type_info: TypeInfo::integer(),
+//!         visibility: Visibility::Private,
+//!         location: SourceLocation {
+//!             file: "MyClass.cls".to_string(),
+//!             line: 1,
+//!             column: 1
+//!         },
+//!         scope_id: class_scope_id,
+//!         attributes: HashMap::new()
+//!     };
+//!     manager.add_symbol(myVar_symbol).expect("Failed to add symbol 'MyVar' to class scope");
+//!     manager.pop_scope().expect("Failed to pop class scope");
+//! }
+//! ```
+
 use crate::error::Result;
+use crate::symbols::{Symbol, Visibility};
 use std::collections::HashMap;
 
 /// Represents a lexical scope in VB6 code
@@ -24,6 +61,7 @@ pub struct Scope {
     pub name: String,
 }
 
+/// Manages the hierarchy of scopes and symbol resolution
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScopeKind {
     /// Global/Module level scope
@@ -65,6 +103,7 @@ pub struct ScopeManager {
 }
 
 impl ScopeManager {
+    /// Create a new scope manager with an initial global scope
     pub fn new() -> Self {
         let mut manager = Self {
             scopes: HashMap::new(),
@@ -108,16 +147,17 @@ impl ScopeManager {
 
         self.scopes.insert(scope_id, scope);
         self.current_scope = scope_id;
-        
+
         scope_id
     }
 
     /// Pop the current scope, returning to parent
     pub fn pop_scope(&mut self) -> Result<()> {
-        let current = self.scopes.get(&self.current_scope)
-            .ok_or_else(|| crate::error::SemanticError::InvalidScope {
+        let current = self.scopes.get(&self.current_scope).ok_or_else(|| {
+            crate::error::SemanticError::InvalidScope {
                 message: format!("Current scope {} not found", self.current_scope),
-            })?;
+            }
+        })?;
 
         if let Some(parent) = current.parent {
             self.current_scope = parent;
@@ -146,10 +186,11 @@ impl ScopeManager {
 
     /// Add a symbol to the current scope
     pub fn add_symbol(&mut self, symbol: Symbol) -> Result<()> {
-        let scope = self.scopes.get_mut(&self.current_scope)
-            .ok_or_else(|| crate::error::SemanticError::InvalidScope {
+        let scope = self.scopes.get_mut(&self.current_scope).ok_or_else(|| {
+            crate::error::SemanticError::InvalidScope {
                 message: format!("Current scope {} not found", self.current_scope),
-            })?;
+            }
+        })?;
 
         if let Some(existing) = scope.symbols.get(&symbol.name) {
             return Err(crate::error::SemanticError::DuplicateSymbol {
@@ -207,7 +248,7 @@ impl ScopeManager {
         // Walk up to find the module-level scope (Global or Class)
         let current_module = self.find_module_scope(self.current_scope);
         let other_module = self.find_module_scope(scope_id);
-        
+
         current_module == other_module
     }
 
@@ -235,10 +276,7 @@ impl ScopeManager {
 
     /// Get all scopes of a specific kind
     pub fn get_scopes_by_kind(&self, kind: ScopeKind) -> Vec<&Scope> {
-        self.scopes
-            .values()
-            .filter(|s| s.kind == kind)
-            .collect()
+        self.scopes.values().filter(|s| s.kind == kind).collect()
     }
 }
 

@@ -1,3 +1,31 @@
+//! Type information and type checking for VB6 symbols.
+//!
+//! This module defines the `TypeInfo` struct which represents the type of a symbol
+//! in VB6 code, including primitive types, object types, user-defined types, and
+//! function types. It also defines the `TypeKind` enum for categorizing types and
+//! the `TypeChecker` struct which provides methods for checking type compatibility
+//! and assignment rules according to VB6 semantics.
+//!
+//! The `TypeInfo` struct includes methods for determining if one type can be assigned
+//! to another and if two types are compatible for operations.
+//!
+//! The `TypeChecker` struct can be extended in the future to include more complex
+//! type relationships and conversion rules.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use vb6semantic::TypeInfo;
+//! use vb6semantic::TypeKind;
+//!
+//! let int_type = TypeInfo::integer();
+//! let long_type = TypeInfo::long();
+//! let string_type = TypeInfo::string();
+//!
+//! assert!(int_type.can_assign_to(&long_type));
+//! assert!(!string_type.can_assign_to(&int_type));
+//! ```
+
 use std::fmt::Display;
 
 use crate::error::{Result, SourceLocation};
@@ -22,42 +50,69 @@ pub struct TypeInfo {
     pub class_name: Option<String>,
 }
 
+/// Represents the kind of type in VB6
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TypeKind {
     // Primitive types
+    /// Integer type
     Integer,
+    /// Long type
     Long,
+    /// Single type
     Single,
+    /// Double type
     Double,
+    /// Currency type
     Currency,
+    /// String type
     String,
+    /// Boolean type
     Boolean,
+    /// Byte type
     Byte,
+    /// Date type
     Date,
 
     // Complex types
+    /// Variant type that can hold any value
     Variant,
+    /// Object type that can hold any object reference
     Object,
+    /// Class type with a specific class name
     Class(String),
+    /// User-defined type with a specific name
     UserType(String),
+    /// Enum type with a specific name
     Enum(String),
 
     // Special types
+    /// Represents the absence of a value (used for functions that return nothing)
     Nothing,
+    /// Represents an uninitialized variable
     Empty,
+    /// Represents a null value (used for object references)
     Null,
 
     // Function types
+    /// Represents a Sub procedure (no return value)
     Sub,
-    Function { return_type: Box<TypeInfo> },
+    /// Represents a Function with a return type
+    Function {
+        /// The return type of the function
+        return_type: Box<TypeInfo>,
+    },
 
     // Unknown/unresolved
+    /// Represents an unknown or unresolved type (used for error cases)
     Unknown,
 }
 
+/// Represents the bounds of an array dimension
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ArrayBound {
+    /// Lower bound of the array dimension (optional, defaults to 0)
     pub lower: Option<i32>,
+    /// Upper bound of the array dimension (optional, defaults to -1 for dynamic arrays)
     pub upper: Option<i32>,
 }
 
@@ -95,6 +150,7 @@ impl Display for TypeInfo {
 }
 
 impl TypeInfo {
+    /// Create a new TypeInfo with the given kind
     pub fn new(kind: TypeKind) -> Self {
         Self {
             kind,
@@ -105,30 +161,37 @@ impl TypeInfo {
         }
     }
 
+    /// Helper constructor for integer type
     pub fn integer() -> Self {
         Self::new(TypeKind::Integer)
     }
 
+    /// Helper constructor for long type
     pub fn long() -> Self {
         Self::new(TypeKind::Long)
     }
 
+    /// Helper constructor for single type
     pub fn string() -> Self {
         Self::new(TypeKind::String)
     }
 
+    /// Helper constructor for boolean type
     pub fn boolean() -> Self {
         Self::new(TypeKind::Boolean)
     }
 
+    /// Helper constructor for variant type
     pub fn variant() -> Self {
         Self::new(TypeKind::Variant)
     }
 
+    /// Helper constructor for object type
     pub fn object() -> Self {
         Self::new(TypeKind::Object)
     }
 
+    /// Helper constructor for unknown type
     pub fn unknown() -> Self {
         Self::new(TypeKind::Unknown)
     }
@@ -182,10 +245,11 @@ impl TypeInfo {
 
 /// Type checker for VB6 code
 pub struct TypeChecker {
-    // Future: store type relationships, conversion rules, etc.
+    // TODO: store type relationships, conversion rules, etc.
 }
 
 impl TypeChecker {
+    /// Create a new type checker instance
     pub fn new() -> Self {
         Self {}
     }

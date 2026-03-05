@@ -37,8 +37,25 @@ vb6parse → SemanticAnalyzer
               ↓
          NameResolver
               ↓
-         TypeChecker
+         TypeChecker (uses vb6runtime::VBType)
 ```
+
+### Integration with Other Libraries
+
+**vb6runtime** - Type system dependency:
+- Uses `vb6runtime::VBType` for all type information
+- Uses `vb6runtime::Value` for understanding VB6 value semantics
+- Ensures type checking matches VB6 runtime behavior
+
+**vb6core** - Not a direct dependency:
+- vb6semantic operates on CST from vb6parse
+- Does NOT use vb6core's IR (that's for compilation/interpretation)
+- However, vb6core uses semantic analysis results before lowering to IR
+
+**Outputs consumed by**:
+- `vb6compile` - Uses semantic analysis before compilation
+- `vb6convert` - Uses semantic analysis for conversion
+- `vb6interpret` - Uses semantic analysis for runtime checks
 
 ## Symbol Representation
 
@@ -127,7 +144,11 @@ End Sub
 
 ## Type System
 
+`vb6semantic` uses the type system from `vb6runtime` to ensure exact VB6 semantics.
+
 ### Type Categories
+
+These mirror `vb6runtime::VBType`:
 
 #### Primitive Types
 - **Numeric**: Integer, Long, Byte, Single, Double, Currency
@@ -136,12 +157,14 @@ End Sub
 - **Temporal**: Date
 
 #### Complex Types
-- **Variant**: Can hold any type
+- **Variant**: Can hold any type (uses `vb6runtime::Value`)
 - **Object**: Generic object reference
 - **Class**: Specific class instance
 - **UserType**: Custom structure
 - **Enum**: Enumeration type
-- **Array**: Arrays of any type
+- **Array**: Arrays of any type (with VB6 semantics)
+
+**Note**: Type definitions come from `vb6runtime::VBType` to ensure semantic analysis uses the same type system as runtime execution and compilation.
 
 ### Type Compatibility
 
@@ -351,12 +374,32 @@ Input: Parsed structures from vb6parse
 
 Walk the parsed AST and build symbols.
 
+### With vb6runtime
+
+Uses type system:
+- `vb6runtime::VBType` for all type information
+- `vb6runtime::Value` for understanding value semantics
+- Type compatibility rules match vb6runtime behavior
+
+### With vb6compile
+
+Provides semantic analysis before compilation:
+- Symbol tables for IR generation
+- Type information for optimization
+- Semantic validation before lowering to vb6core IR
+
 ### With vb6convert
 
 Provide symbol information for conversion:
 - Symbol lookup during conversion
-- Type information for mapping
+- Type information for mapping (via vb6runtime types)
 - Scope information for code generation
+
+### With vb6interpret
+
+Provides semantic information for interpretation:
+- Symbol lookup during execution
+- Type checking for runtime operations
 
 ### With IDEs
 

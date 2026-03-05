@@ -1,3 +1,33 @@
+//! Defines the `Symbol` struct and `SymbolTable` for managing symbols in the VB6 code
+//! This module provides the core data structures for representing symbols
+//! (variables, functions, classes, etc.) and a symbol table for managing them within
+//! different scopes. The `Symbol` struct includes information about the symbol's name,
+//! kind, type, visibility, location, and scope. The `SymbolTable` struct provides
+//! methods to create scopes, add symbols, and perform lookups.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use vb6semantic::{Symbol, Visibility, SymbolKind, SourceLocation, TypeInfo};
+//!
+//! use std::collections::HashMap;
+//!
+//! let symbol = Symbol {
+//!     name: "myVariable".to_string(),
+//!     kind: SymbolKind::Variable,
+//!     type_info: TypeInfo::integer(),
+//!     visibility: Visibility::Private,
+//!     location: SourceLocation {
+//!         file: "Module1.bas".to_string(),
+//!         line: 10,
+//!         column: 5,
+//!     },
+//!     scope_id: 1,
+//!     attributes: HashMap::new(),
+//! };
+//! println!("Defined symbol: {:?}", symbol);
+//! ```
+
 use crate::error::{Result, SourceLocation};
 use crate::types::TypeInfo;
 use serde::{Deserialize, Serialize};
@@ -28,6 +58,7 @@ pub struct Symbol {
     pub attributes: HashMap<String, String>,
 }
 
+/// Represents the kind of symbol (variable, function, class, etc.)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SymbolKind {
     /// Variable declaration
@@ -82,12 +113,17 @@ pub enum SymbolKind {
     Label,
 }
 
+/// Represents the symbol table for managing symbols in scopes
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Default, Deserialize)]
 pub enum Visibility {
+    /// Public symbol, accessible from anywhere
     #[default]
     Public,
+    /// Private symbol, accessible only within the defining module/class
     Private,
+    /// Friend symbol, accessible within the same project
     Friend,
+    /// Global symbol, accessible from anywhere (legacy VB6 global scope)
     Global,
 }
 
@@ -102,6 +138,7 @@ pub struct SymbolTable {
 }
 
 impl SymbolTable {
+    /// Create a new symbol table
     pub fn new() -> Self {
         Self {
             symbols: HashMap::new(),

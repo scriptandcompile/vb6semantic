@@ -1,3 +1,43 @@
+//! Semantic analyzer for VB6 code. This module performs semantic analysis on the parsed CST
+//! to build symbol tables, resolve names, check types, and report errors.
+//!
+//! The main entry point is the `SemanticAnalyzer` struct, which provides methods to analyze
+//! project files, module files, class files, and form files. The analyzer maintains a scope
+//! manager to handle symbol resolution and a type checker for validating type usage. Errors and
+//! warnings are collected during analysis and can be retrieved after the process is complete.
+//!
+//! The `NameResolver` struct is used for resolving symbol references within the current
+//! scope context. It provides methods to resolve simple names and qualified names, as well
+//! as checking symbol accessibility.
+//!
+//! The `ScopeManager` struct manages the hierarchy of scopes and symbols, allowing for lookups
+//! and scope transitions during analysis. The `TypeChecker` struct provides methods for checking
+//! type compatibility and assignment validity.
+//!
+//! Overall, this module is responsible for the core semantic analysis logic that ensures the VB6 code
+//! is semantically correct and provides meaningful error messages for any issues found.
+//!
+//! # Examples
+//!
+//! ```rust, no_run
+//! use vb6semantic::SemanticAnalyzer;
+//! use vb6parse::io::SourceFile;
+//! use vb6parse::files::ProjectFile;
+//!
+//! let mut analyzer = SemanticAnalyzer::new();
+//! let project_source = SourceFile::from_file("MyProject.vbp").expect("Failed to read project file");
+//! let (project_opt, failures) = ProjectFile::parse(&project_source).unpack();
+//! if !failures.is_empty() {
+//!     eprintln!("Failed to parse project file: {:?}", failures);
+//!     return;
+//! }
+//!
+//! let project = project_opt.expect("Project file should have parsed successfully");
+//!
+//! let analysis_result = analyzer.analyze_project(&project).expect("Failed to analyze project");
+//! println!("Analysis completed with {} errors and {} warnings", analysis_result.errors.len(), analysis_result.warnings.len());
+//! ```
+
 use crate::error::{Result, SourceLocation};
 use crate::scope::{ScopeKind, ScopeManager};
 use crate::symbols::Symbol;
@@ -23,6 +63,7 @@ pub struct SemanticAnalyzer {
 }
 
 impl SemanticAnalyzer {
+    /// Create a new semantic analyzer instance
     pub fn new() -> Self {
         Self {
             scope_manager: ScopeManager::new(),
